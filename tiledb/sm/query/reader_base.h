@@ -768,7 +768,8 @@ class ReaderBase : public StrategyBase {
       const std::vector<QueryBuffer*>& buffers,
       std::vector<uint64_t>* offsets) const;
 
-  Status prepare_unfiltering_buffers(
+  // TODO: add docstring
+  std::tuple<Status, std::optional<uint64_t>> prepare_unfiltered_buffers(
       Tile* const tile, ChunkData* chunk_data) const;
 };
 

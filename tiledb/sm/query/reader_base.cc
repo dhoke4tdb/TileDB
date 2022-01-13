@@ -624,24 +624,34 @@ Status ReaderBase::read_tiles(
   return Status::Ok();
 }
 
-Status ReaderBase::prepare_unfiltering_buffers(
+std::tuple<Status, std::optional<uint64_t>>
+ReaderBase::prepare_unfiltered_buffers(
     Tile* const tile, ChunkData* unfiltered_tile) const {
   assert(tile->filtered());
 
   assert(tile->buffer());
   assert(tile->buffer()->size() == 0);
-  if (tile->buffer()->size() > 0)
-    return LOG_STATUS(
+  Status st = Status::Ok();
+  if (tile->buffer()->size() > 0) {
+    st = logger_->status(
         Status_ReaderError("Tile has allocated uncompressed chunk buffers."));
+    return {st, std::nullopt};
+  }
 
   Buffer* const filtered_buffer = tile->filtered_buffer();
-  if (filtered_buffer == nullptr)
-    return LOG_STATUS(Status_ReaderError("Tile has null buffer."));
+  if (filtered_buffer == nullptr) {
+    st = logger_->status(Status_ReaderError("Tile has null buffer."));
+    return {st, std::nullopt};
+  }
 
   // Make a pass over the tile to get the chunk information.
   filtered_buffer->reset_offset();
   uint64_t num_chunks;
-  RETURN_NOT_OK(filtered_buffer->read(&num_chunks, sizeof(uint64_t)));
+  st = filtered_buffer->read(&num_chunks, sizeof(uint64_t));
+  if (!st.ok()) {
+    return {st, std::nullopt};
+  }
+
   auto& filtered_chunks = unfiltered_tile->filtered_chunks_;
   auto& chunk_offsets = unfiltered_tile->chunk_offsets_;
   filtered_chunks.resize(num_chunks);
@@ -649,12 +659,23 @@ Status ReaderBase::prepare_unfiltering_buffers(
   uint64_t total_orig_size = 0;
   for (uint64_t i = 0; i < num_chunks; i++) {
     auto& chunk = filtered_chunks[i];
-    RETURN_NOT_OK(filtered_buffer->read(
-        &(chunk.unfiltered_data_size_), sizeof(uint32_t)));
-    RETURN_NOT_OK(
-        filtered_buffer->read(&(chunk.filtered_data_size_), sizeof(uint32_t)));
-    RETURN_NOT_OK(filtered_buffer->read(
-        &(chunk.filtered_metadata_size_), sizeof(uint32_t)));
+    st =
+        filtered_buffer->read(&(chunk.unfiltered_data_size_), sizeof(uint32_t));
+    if (!st.ok()) {
+      return {st, std::nullopt};
+    }
+
+    st = filtered_buffer->read(&(chunk.filtered_data_size_), sizeof(uint32_t));
+    if (!st.ok()) {
+      return {st, std::nullopt};
+    }
+
+    st = filtered_buffer->read(
+        &(chunk.filtered_metadata_size_), sizeof(uint32_t));
+    if (!st.ok()) {
+      return {st, std::nullopt};
+    }
+
     chunk.filtered_metadata_ = filtered_buffer->cur_data();
     chunk.filtered_data_ =
         (char*)chunk.filtered_metadata_ + chunk.filtered_metadata_size_;
@@ -668,7 +689,15 @@ Status ReaderBase::prepare_unfiltering_buffers(
 
   assert(filtered_buffer->offset() == filtered_buffer->size());
 
-  return Status::Ok();
+  // todo: why we need that??
+  if (total_orig_size != tile->buffer()->alloced_size()) {
+    st = tile->buffer()->realloc(total_orig_size);
+    if (!st.ok()) {
+      return {st, std::nullopt};
+    }
+  }
+
+  return {Status::Ok(), total_orig_size};
 }
 
 Status ReaderBase::unfilter_tiles(
@@ -691,16 +720,16 @@ Status ReaderBase::unfilter_tiles(
     num_range_threads = 1 + ((num_threads - 1) / num_tiles);
   }
 
-  // A vector with alla the necessary chunk data for unfiltering
+  // Vectors with all the necessary chunk data for unfiltering
   std::vector<ChunkData> tiles_chunk_data(num_tiles);
   std::vector<ChunkData> tiles_chunk_var_data(num_tiles);
   std::vector<ChunkData> tiles_chunk_validity_data(num_tiles);
+  // check if those can be removed
+  std::vector<uint64_t> unfiltered_tile_size(num_tiles);
+  std::vector<uint64_t> unfiltered_tile_var_size(num_tiles);
+  std::vector<uint64_t> unfiltered_tile_validity_size(num_tiles);
 
-  // If the number of cores is greater or equal to the number of tiles,
-  // pre-allocate unfiltered buffers and pre-compute offsets.
-  // TODO: uncomment the following line. For now let's do it in all cases
-  // until we have a working prototype.
-  // if (num_range_threads != 1) {
+  // Pre-compute offsets.
   auto status = parallel_for(
       storage_manager_->compute_tp(), 0, num_tiles, [&](uint64_t i) {
         auto tile = result_tiles->at(i);
@@ -724,21 +753,26 @@ Status ReaderBase::unfilter_tiles(
           auto& t_var = std::get<1>(*tile_tuple);
           auto& t_validity = std::get<2>(*tile_tuple);
 
-          RETURN_NOT_OK(
-              prepare_unfiltering_buffers(&t, &tiles_chunk_data.at(i)));
+          auto&& [st, tile_size] =
+              prepare_unfiltered_buffers(&t, &tiles_chunk_data.at(i));
+          RETURN_NOT_OK(st);
+          unfiltered_tile_size[i] = tile_size.value();
           if (var_size) {
-            RETURN_NOT_OK(prepare_unfiltering_buffers(
-                &t_var, &tiles_chunk_var_data.at(i)));
+            auto&& [st, tile_var_size] =
+                prepare_unfiltered_buffers(&t_var, &tiles_chunk_var_data.at(i));
+            RETURN_NOT_OK(st);
+            unfiltered_tile_var_size[i] = tile_var_size.value();
           }
           if (nullable) {
-            RETURN_NOT_OK(prepare_unfiltering_buffers(
-                &t_validity, &tiles_chunk_validity_data.at(i)));
+            auto&& [st, tile_validity_size] = prepare_unfiltered_buffers(
+                &t_validity, &tiles_chunk_validity_data.at(i));
+            RETURN_NOT_OK(st);
+            unfiltered_tile_validity_size[i] = tile_validity_size.value();
           }
         }
         return Status::Ok();
       });
   RETURN_NOT_OK_ELSE(status, logger_->status(status));
-  // }
 
   if (tiles_chunk_data.empty())
     return Status::Ok();
@@ -753,7 +787,14 @@ Status ReaderBase::unfilter_tiles(
       [&](uint64_t i, uint64_t range_thread_idx) {
         auto tile = result_tiles->at(i);
         auto& tile_chunk_data = tiles_chunk_data.at(i);
-        uint64_t tile_chunk_data_size = tile_chunk_data.chunk_offsets_.size();
+        uint64_t num_tile_chunks = tile_chunk_data.filtered_chunks_.size();
+
+        // Prevent processing past the end of chunks in case there are more
+        // threads than chunks.
+        if (range_thread_idx > num_tile_chunks - 1) {
+          return Status::Ok();
+        }
+
         auto& fragment = fragment_metadata_[tile->frag_idx()];
         auto format_version = fragment->format_version();
 
@@ -805,26 +846,26 @@ Status ReaderBase::unfilter_tiles(
             }
           }
 
-          // Compute the chunks to process.
-          auto t_part_num = std::min(tile_chunk_data_size, num_range_threads);
-          auto t_min =
-              (range_thread_idx * tile_chunk_data_size + t_part_num - 1) /
-              t_part_num;
-          auto t_max = std::min(
-              ((range_thread_idx + 1) * tile_chunk_data_size + t_part_num - 1) /
-                  t_part_num,
-              tile_chunk_data_size);
-
           FilterPipeline filters = array_schema_->filters(name);
           // Append an encryption unfilter when necessary.
           RETURN_NOT_OK(FilterPipeline::append_encryption_filter(
               &filters, array_->get_encryption_key()));
 
+          assert(num_tile_chunks != 0);
+          // Compute the chunks to process.
+          auto t_part_num = std::min(num_tile_chunks, num_range_threads);
+          auto t_min = (range_thread_idx * num_tile_chunks + t_part_num - 1) /
+                       t_part_num;
+          auto t_max = std::min(
+              ((range_thread_idx + 1) * num_tile_chunks + t_part_num - 1) /
+                  t_part_num,
+              num_tile_chunks);
+
           // Reverse the tile filters.
           RETURN_NOT_OK(filters.run_reverse_chunk_range(
               stats_,
               &t,
-              tile_chunk_data,
+              &tile_chunk_data,
               t_min,
               t_max,
               storage_manager_->compute_tp(),
@@ -857,7 +898,7 @@ Status ReaderBase::unfilter_tiles(
             RETURN_NOT_OK(filters.run_reverse_chunk_range(
                 stats_,
                 &t_var,
-                tile_chunk_var_data,
+                &tile_chunk_var_data,
                 t_var_min,
                 t_var_max,
                 storage_manager_->compute_tp(),
@@ -890,7 +931,7 @@ Status ReaderBase::unfilter_tiles(
             RETURN_NOT_OK(filters.run_reverse_chunk_range(
                 stats_,
                 &t_validity,
-                tile_chunk_validity_data,
+                &tile_chunk_validity_data,
                 t_validity_min,
                 t_validity_max,
                 storage_manager_->compute_tp(),
@@ -902,81 +943,95 @@ Status ReaderBase::unfilter_tiles(
 
   RETURN_CANCEL_OR_ERROR(status);
 
+  // TODO: check if this is useless
   status = parallel_for(
       storage_manager_->compute_tp(), 0, num_tiles, [&](uint64_t i) {
         auto tile = result_tiles->at(i);
-        // for t in tuple (repeated code here)
-        auto tile_tuple = tile->tile_tuple(name);
+        auto format_version =
+            fragment_metadata_[tile->frag_idx()]->format_version();
 
-        // Skip non-existent attributes/dimensions (e.g. coords in the
-        // dense case).
-        if (tile_tuple == nullptr ||
-            std::get<0>(*tile_tuple).filtered_buffer()->size() == 0)
-          return Status::Ok();
+        // Applicable for zipped coordinates only to versions < 5
+        // Applicable for separate coordinates only to version >= 5
+        if (name != constants::coords ||
+            (name == constants::coords && format_version < 5) ||
+            (array_schema_->is_dim(name) && format_version >= 5)) {
+          // for t in tuple (repeated code here)
+          auto tile_tuple = tile->tile_tuple(name);
 
-        auto& t = std::get<0>(*tile_tuple);
-        auto& t_var = std::get<1>(*tile_tuple);
-        auto& t_validity = std::get<2>(*tile_tuple);
+          // Skip non-existent attributes/dimensions (e.g. coords in the
+          // dense case).
+          if (tile_tuple == nullptr ||
+              std::get<0>(*tile_tuple).filtered_buffer()->size() == 0)
+            return Status::Ok();
 
-        auto const fragment = fragment_metadata_[tile->frag_idx()];
-        auto tile_idx = tile->tile_idx();
-        uint64_t tile_size = fragment->tile_size(name, tile_idx);
-        uint64_t tile_var_persisted_size;
-        RETURN_NOT_OK(fragment->persisted_tile_var_size(
-            name, tile_idx, &tile_var_persisted_size));
-        uint64_t tile_validity_size =
-            fragment->cell_num(tile_idx) * constants::cell_validity_size;
+          auto& t = std::get<0>(*tile_tuple);
+          auto& t_var = std::get<1>(*tile_tuple);
+          auto& t_validity = std::get<2>(*tile_tuple);
 
-        t.buffer()->set_size(tile_size);
-        t_var.buffer()->set_size(tile_var_persisted_size);
-        t_validity.buffer()->set_size(tile_validity_size);
+          // TODO: try this out
+          // auto const fragment = fragment_metadata_[tile->frag_idx()];
+          // auto tile_idx = tile->tile_idx();
+          // uint64_t tile_size = fragment->tile_size(name, tile_idx);
+          // uint64_t tile_var_persisted_size;
+          // RETURN_NOT_OK(fragment->persisted_tile_var_size(
+          //    name, tile_idx, &tile_var_persisted_size));
+          // uint64_t tile_validity_size =
+          //    fragment->cell_num(tile_idx) * constants::cell_validity_size;
 
-        // t.filtered_buffer()->reset_offset();
-        t.filtered_buffer()->clear();
-        t_var.filtered_buffer()->clear();
-        t_validity.filtered_buffer()->clear();
+          t.buffer()->set_size(unfiltered_tile_size[i]);
+          t.filtered_buffer()->clear();
 
-        FilterPipeline filters = array_schema_->filters(name);
-        // Zip the coords.
-        if (t.stores_coords()) {
-          // Note that format version < 2 only split the coordinates when
-          // compression was used. See
-          // https://github.com/TileDB-Inc/TileDB/issues/1053 For format version
-          // > 4, a tile never stores coordinates
-          bool using_compression =
-              filters.get_filter<CompressionFilter>() != nullptr;
-          auto version = t.format_version();
-          if (version > 1 || using_compression) {
-            RETURN_NOT_OK(t.zip_coordinates());
+          FilterPipeline filters = array_schema_->filters(name);
+          // Zip the coords.
+          if (t.stores_coords()) {
+            // Note that format version < 2 only split the coordinates when
+            // compression was used. See
+            // https://github.com/TileDB-Inc/TileDB/issues/1053 For format
+            // version > 4, a tile never stores coordinates
+            bool using_compression =
+                filters.get_filter<CompressionFilter>() != nullptr;
+            auto version = t.format_version();
+            if (version > 1 || using_compression) {
+              RETURN_NOT_OK(t.zip_coordinates());
+            }
+          }
+
+          if (var_size) {
+            t_var.buffer()->set_size(unfiltered_tile_var_size[i]);
+            t_var.filtered_buffer()->clear();
+            // Zip the coords.
+            if (t_var.stores_coords()) {
+              // Note that format version < 2 only split the coordinates when
+              // compression was used. See
+              // https://github.com/TileDB-Inc/TileDB/issues/1053 For format
+              // version > 4, a tile never stores coordinates
+              bool using_compression =
+                  filters.get_filter<CompressionFilter>() != nullptr;
+              auto version = t_var.format_version();
+              if (version > 1 || using_compression) {
+                RETURN_NOT_OK(t_var.zip_coordinates());
+              }
+            }
+
+            if (nullable) {
+              t_validity.buffer()->set_size(unfiltered_tile_validity_size[i]);
+              t_validity.filtered_buffer()->clear();
+              // Zip the coords.
+              if (t_validity.stores_coords()) {
+                // Note that format version < 2 only split the coordinates when
+                // compression was used. See
+                // https://github.com/TileDB-Inc/TileDB/issues/1053 For format
+                // version > 4, a tile never stores coordinates
+                bool using_compression =
+                    filters.get_filter<CompressionFilter>() != nullptr;
+                auto version = t_validity.format_version();
+                if (version > 1 || using_compression) {
+                  RETURN_NOT_OK(t_validity.zip_coordinates());
+                }
+              }
+            }
           }
         }
-        // Zip the coords.
-        if (t_var.stores_coords()) {
-          // Note that format version < 2 only split the coordinates when
-          // compression was used. See
-          // https://github.com/TileDB-Inc/TileDB/issues/1053 For format version
-          // > 4, a tile never stores coordinates
-          bool using_compression =
-              filters.get_filter<CompressionFilter>() != nullptr;
-          auto version = t_var.format_version();
-          if (version > 1 || using_compression) {
-            RETURN_NOT_OK(t_var.zip_coordinates());
-          }
-        }
-        // Zip the coords.
-        if (t_validity.stores_coords()) {
-          // Note that format version < 2 only split the coordinates when
-          // compression was used. See
-          // https://github.com/TileDB-Inc/TileDB/issues/1053 For format version
-          // > 4, a tile never stores coordinates
-          bool using_compression =
-              filters.get_filter<CompressionFilter>() != nullptr;
-          auto version = t_validity.format_version();
-          if (version > 1 || using_compression) {
-            RETURN_NOT_OK(t_validity.zip_coordinates());
-          }
-        }
-
         return Status::Ok();
       });
 
