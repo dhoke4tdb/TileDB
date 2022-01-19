@@ -34,8 +34,9 @@ runs:
     - name: "Build"
       shell: powershell
       run: |
-        #mkdir $env:AGENT_BUILDDIRECTORY\build
-        #cd $env:AGENT_BUILDDIRECTORY\build
+
+        #directory $env:BUILD_BUILDDIRECTORY was created in step 'tiledb env prep'
+        cd $env:BUILD_BUILDDIRECTORY
 
         $VSCategory = "Enterprise" # alternate 'Community'
         if ($env:TILEDB_GA_IMAGE_NAME -eq "windows-2016") {
