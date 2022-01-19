@@ -142,6 +142,7 @@ runs:
         #tar -zcf ${binary_archive_name} ./TileDB/build
         #tar -zcf ${binary_archive_name} $BUILD_BUILDDIRECTORY
         #If/when runner environ changes, the '/d/a' will probably require change!!!
+        echo "\$BUILD_BUILDDIRECTORY is $BUILD_BUILDDIRECTORY"
         MSYS2_ARG_CONV_EXCL='/d/a' tar -zcf ${binary_archive_name} $BUILD_BUILDDIRECTORY
         ls -l $GITHUB_WORKSPACE/..
         sync
