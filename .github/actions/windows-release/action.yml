@@ -152,6 +152,8 @@ runs:
         sync
 
         TDB_SOURCE_ARCHIVE_PATH2="$GITHUB_WORKSPACE/../${source_archive_name}"
+        TDB_SOURCE_ARCHIVE_PATH3="$GITHUB_WORKSPACE../${source_archive_name}"
+        echo "TDB_SOURCE_ARCHIVE_PATH3=$TDB_SOURCE_ARCHIVE_PATH3" # >> "$GITHUB_WORKSPACE/../TDBRETENVVARS.TXT"
         TDB_SOURCE_ARCHIVE_PATH=$(echo -e "import sys\nimport os\nprint (os.path.realpath(\"$TDB_SOURCE_ARCHIVE_PATH2\"))\n" | python)
 
         TDB_BINARY_ARCHIVE_PATH2="$GITHUB_WORKSPACE/../${binary_archive_name}"
