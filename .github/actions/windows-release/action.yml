@@ -127,16 +127,20 @@ runs:
         pwd
         # move up a directory level so we are writing archive where tar won't fail reporting change while reading...
         cd $GITHUB_WORKSPACE/..
+        #cd $BUILD_BUILDDIRFECTORY/..
         pwd
         source_archive_name=tiledb-source-${TDB_REF_NAME}-${TDB_COMMIT_HASH}.tar.gz
         tar --exclude=build -zcf ${source_archive_name} ./TileDB
         ls -l $GITHUB_WORKSPACE/..
+        #ls -l $BUILD_BUILDDIRFECTORY/..
         sync
         # move up a directory level so we are writing archive where tar won't fail reporting change while reading...
         cd $GITHUB_WORKSPACE/..
+        #ls -l $BUILD_BUILDDIRFECTORY/..
         pwd
         binary_archive_name=tiledb-${ARTIFACT_OS}-${ARTIFACT_ARCH}-${TDB_REF_NAME}-${TDB_COMMIT_HASH}.tar.gz
-        tar -zcf ${binary_archive_name} ./TileDB/build
+        #tar -zcf ${binary_archive_name} ./TileDB/build
+        tar -zcf ${binary_archive_name} $BUILD_BUILDDIRECTORY
         ls -l $GITHUB_WORKSPACE/..
         sync
 
