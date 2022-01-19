@@ -188,7 +188,7 @@ jobs:
 
           if ($LastExitCode -ne 0) {
             Write-Host "Installation failed."
-            $host.SetShouldExit($LastExitCode)
+            exit $LastExitCode
           }
         shell: powershell
 

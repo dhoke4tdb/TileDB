@@ -105,6 +105,7 @@ runs:
     #~ - name: 'upload-release-source-asset'
       #~ #uses: actions/upload-files-to-a-github-release
       #~ uses: svenstaro/upload-release-action@2.2.1
+      #~ if: startsWith(env.GITHUB_REF, 'refs/tags') || startsWith( env.GITHUB_REF_NAME, 'release-') || startsWith( env.GITHUB_REF_NAME, 'build-')
       #~ if: false
       #~ with:
         #~ # required items
@@ -134,7 +135,7 @@ runs:
     #~ - name: 'upload-release-binary-asset'
       #~ #uses: actions/upload-files-to-a-github-release
       #~ uses: svenstaro/upload-release-action@2.2.1
-      #~ if: false
+      #~ if: startsWith(env.GITHUB_REF, 'refs/tags') || startsWith( env.GITHUB_REF_NAME, 'release-') || startsWith( env.GITHUB_REF_NAME, 'build-')
       #~ with:
         #~ # required items
         #~ repo_token: ${{ secrets.GITHUB_TOKEN }}
