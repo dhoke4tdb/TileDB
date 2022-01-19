@@ -1,4 +1,4 @@
-name: act-linux_mac-release
+name: act-manylinux-release
 
 runs:
   using: "composite"

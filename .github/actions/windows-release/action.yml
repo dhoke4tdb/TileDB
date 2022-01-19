@@ -4,14 +4,6 @@ runs:
   using: "composite"
   steps:
 
-    env:
-      TILEDB_HOME: ${{ github.workspace }}
-      TILEDB_GA_IMAGE_NAME: ${{ matrix.os }}
-      TILEDB_S3: ${{ matrix.TILEDB_S3 }}
-      TILEDB_AZURE: ${{ matrix.TILEDB_AZURE }} #azure }}
-      TILEDB_SERIALIZATION: ${{ matrix.TILEDB_SERIALIZATION }} #serialization }}
-      TILEDB_ARROW_TESTS: ${{ matrix.TILEDB_ARROW_TESTS }}
-
     - name: 'Build libtiledb scripted inits'
       if: true
       #not available in (composite) action? continue-on-error: true
