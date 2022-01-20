@@ -116,6 +116,20 @@ runs:
         echo "TDB_SOURCE_ARCHIVE_PATH is $TDB_SOURCE_ARCHIVE_PATH"
         
 
+    - name: 'diag step' # https://github.com/actions/upload-artifact#where-does-the-upload-go
+      shell: bash
+      run: |
+        set -x
+        pwd
+        echo "\$GITHUB_REF IS ${GITHUB_REF}"
+        echo "\$GITHUB_REF_NAME IS ${GITHUB_REF_NAME}"
+        echo "TDB_BINARY_ARCHIVE_PATH is $TDB_BINARY_ARCHIVE_PATH"
+        echo "TDB_SOURCE_ARCHIVE_PATH is $TDB_SOURCE_ARCHIVE_PATH"
+        ls -l $TDB_SOURCE_ARCHIVE_PATH
+        ls -l $TDB_BINARY_ARCHIVE_PATH
+        ls -l $GITHUB_WORKSPACE
+        ls -l $GITHUB_WORKSPACE/..
+
     - name: 'ArchiveFiles@2A' # https://github.com/actions/upload-artifact#where-does-the-upload-go
       #if: ${{ failure() == true && startsWith(runner.name, 'macos-') == true }} # only run this job if the build step failed
       #if tag || branch prefix is 'release-' || branch prefix is 'build-'
