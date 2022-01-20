@@ -110,6 +110,8 @@ runs:
         docker inspect $containername
         sync
         docker stop $containername
+        echo "\$GITHUB_REF IS ${GITHUB_REF}"
+        echo "\$GITHUB_REF_NAME IS ${GITHUB_REF_NAME}"
 
     - name: 'ArchiveFiles@2A' # https://github.com/actions/upload-artifact#where-does-the-upload-go
       #if: ${{ failure() == true && startsWith(runner.name, 'macos-') == true }} # only run this job if the build step failed
