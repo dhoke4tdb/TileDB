@@ -118,7 +118,7 @@ runs:
       uses: actions/upload-artifact@v2
       with:
         retention-days: 10
-        name: tiledb-source-${{ env.ARTIFACT_OS }}-${{ env.ARTIFACT_ARCH }}.${{env.TDB_REF_NAME}}.tar.gz
+        name: tiledb-lnx-source-${{ env.ARTIFACT_OS }}-${{ env.ARTIFACT_ARCH }}.${{env.TDB_REF_NAME}}.tar.gz
         #if-no-files-found: warn # 'ignore/', 'warn' or 'error' are available, defaults to `warn`
         path: |
           ${{ env.TDB_SOURCE_ARCHIVE_PATH }}
