@@ -112,11 +112,14 @@ runs:
         docker stop $containername
         echo "\$GITHUB_REF IS ${GITHUB_REF}"
         echo "\$GITHUB_REF_NAME IS ${GITHUB_REF_NAME}"
+        echo "TDB_BINARY_ARCHIVE_PATH is $TDB_BINARY_ARCHIVE_PATH"
+        echo "TDB_SOURCE_ARCHIVE_PATH is $TDB_SOURCE_ARCHIVE_PATH"
+        
 
     - name: 'ArchiveFiles@2A' # https://github.com/actions/upload-artifact#where-does-the-upload-go
       #if: ${{ failure() == true && startsWith(runner.name, 'macos-') == true }} # only run this job if the build step failed
       #if tag || branch prefix is 'release-' || branch prefix is 'build-'
-      if: startsWith(env.GITHUB_REF, 'refs/tags') || startsWith( env.GITHUB_REF_NAME, 'release-') || startsWith( env.GITHUB_REF_NAME, 'build-')
+      if: (startsWith(env.GITHUB_REF, 'refs/tags') == true) || (startsWith( env.GITHUB_REF_NAME, 'release-') == true) || (startsWith( env.GITHUB_REF_NAME, 'build-') == true)
       uses: actions/upload-artifact@v2
       with:
         retention-days: 10
