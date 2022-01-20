@@ -299,6 +299,16 @@ jobs:
       - name: windows build
         uses: ./.github/actions/windows-release
 
+      - name: show windows env and file assets
+        shell: bash
+        run: |
+          set -x
+          pwd
+          echo "TDB_SOURCE_ARCHIVE_PATH is ${{ env.TDB_SOURCE_ARCHIVE_PATH }}"
+          echo "B - TDB_SOURCE_ARCHIVE_PATH is ${TDB_SOURCE_ARCHIVE_PATH}"
+          ls -l $GITHUB_WORKSPACE/..
+
+
       - name: 'upload-release-source-asset'
         #uses: actions/upload-files-to-a-github-release
         uses: svenstaro/upload-release-action@2.2.1
