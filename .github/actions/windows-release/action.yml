@@ -129,8 +129,20 @@ runs:
         cd $GITHUB_WORKSPACE/..
         #cd $BUILD_BUILDDIRFECTORY/..
         pwd
-        source_archive_name=tiledb-source-${TDB_REF_NAME}-${TDB_COMMIT_HASH}.tar.gz
-        tar --exclude=build -zcf ${source_archive_name} ./TileDB
+        if [[ $(which 7z) ]]; then
+          echo "found 7z!"
+        elif [[ $(which 7za) ]]; then
+          echo "found 7za!"
+        else
+          if [[ $(find / -name '7z*.exe') ]]; then
+            echo "found 7z... somewhere (see above)"
+          else
+            echo "Failed to find 7z...!"
+          fi
+        fi
+        #source_archive_name=tiledb-source-${TDB_REF_NAME}-${TDB_COMMIT_HASH}.tar.gz
+        source_archive_name=tiledb-source-${TDB_REF_NAME}-${TDB_COMMIT_HASH}.zip
+        7za -r ${source_archive_name} ./TileDB
         ls -l $GITHUB_WORKSPACE/..
         #ls -l $BUILD_BUILDDIRFECTORY/..
         sync
@@ -138,7 +150,8 @@ runs:
         cd $GITHUB_WORKSPACE/..
         #ls -l $BUILD_BUILDDIRFECTORY/..
         pwd
-        binary_archive_name=tiledb-${ARTIFACT_OS}-${ARTIFACT_ARCH}-${TDB_REF_NAME}-${TDB_COMMIT_HASH}.tar.gz
+        #binary_archive_name=tiledb-${ARTIFACT_OS}-${ARTIFACT_ARCH}-${TDB_REF_NAME}-${TDB_COMMIT_HASH}.tar.gz
+        binary_archive_name=tiledb-${ARTIFACT_OS}-${ARTIFACT_ARCH}-${TDB_REF_NAME}-${TDB_COMMIT_HASH}.zip
         #tar -zcf ${binary_archive_name} ./TileDB/build
         #tar -zcf ${binary_archive_name} $BUILD_BUILDDIRECTORY
         #If/when runner environ changes, the '/d/a' will probably require change!!!
@@ -147,7 +160,8 @@ runs:
         MSYS2_ENV_CONV_EXCL='BUILD_BUILDDIRECTORY' echo "\$BUILD_BUILDDIRECTORY is $BUILD_BUILDDIRECTORY"
         #MSYS2_ARG_CONV_EXCL='/d/a' tar -zcf ${binary_archive_name} $BUILD_BUILDDIRECTORY
         #MSYS2_ENV_CONV_EXCL='BUILD_BUILDDIRECTORY' MSYS2_ARG_CONV_EXCL='/d/a' tar -zcf ${binary_archive_name} $BUILD_BUILDDIRECTORY
-        MSYS2_ENV_CONV_EXCL='BUILD_BUILDDIRECTORY' MSYS2_ARG_CONV_EXCL='/d/a' tar -zcf ${binary_archive_name} $(cygpath -u $BUILD_BUILDDIRECTORY)
+        #MSYS2_ENV_CONV_EXCL='BUILD_BUILDDIRECTORY' MSYS2_ARG_CONV_EXCL='/d/a' tar -zcf ${binary_archive_name} $(cygpath -u $BUILD_BUILDDIRECTORY)
+        MSYS2_ENV_CONV_EXCL='BUILD_BUILDDIRECTORY' MSYS2_ARG_CONV_EXCL='/d/a' 7za -r ${binary_archive_name} $(cygpath -u $BUILD_BUILDDIRECTORY)
         ls -l $GITHUB_WORKSPACE/..
         sync
 

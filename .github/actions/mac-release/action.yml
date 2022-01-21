@@ -94,17 +94,18 @@ runs:
         echo "TDB_BINARY_ARCHIVE_PATH is $TDB_BINARY_ARCHIVE_PATH"
         echo "TDB_SOURCE_ARCHIVE_PATH is $TDB_SOURCE_ARCHIVE_PATH"
 
-    - name: 'ArchiveFiles@2A' # https://github.com/actions/upload-artifact#where-does-the-upload-go
-      #if: ${{ failure() == true && startsWith(runner.name, 'macos-') == true }} # only run this job if the build step failed
-      #if tag || branch prefix is 'release-' || branch prefix is 'build-'
-      if: startsWith(env.GITHUB_REF, 'refs/tags') || startsWith( env.GITHUB_REF_NAME, 'release-') || startsWith( env.GITHUB_REF_NAME, 'build-')
-      uses: actions/upload-artifact@v2
-      with:
-        retention-days: 10
-        name: tiledb-mac-source-${{ env.ARTIFACT_OS }}-${{ env.ARTIFACT_ARCH }}.${{env.TDB_REF_NAME}}.tar.gz
-        #if-no-files-found: warn # 'ignore/', 'warn' or 'error' are available, defaults to `warn`
-        path: |
-          ${{ env.TDB_SOURCE_ARCHIVE_PATH }}
+    #Not saving from mac, will upload from manylinux build.
+    #~ - name: 'ArchiveFiles@2A' # https://github.com/actions/upload-artifact#where-does-the-upload-go
+      #~ #if: ${{ failure() == true && startsWith(runner.name, 'macos-') == true }} # only run this job if the build step failed
+      #~ #if tag || branch prefix is 'release-' || branch prefix is 'build-'
+      #~ if: startsWith(env.GITHUB_REF, 'refs/tags') || startsWith( env.GITHUB_REF_NAME, 'release-') || startsWith( env.GITHUB_REF_NAME, 'build-')
+      #~ uses: actions/upload-artifact@v2
+      #~ with:
+        #~ retention-days: 10
+        #~ name: tiledb-mac-source-${{ env.ARTIFACT_OS }}-${{ env.ARTIFACT_ARCH }}.${{env.TDB_REF_NAME}}.tar.gz
+        #~ #if-no-files-found: warn # 'ignore/', 'warn' or 'error' are available, defaults to `warn`
+        #~ path: |
+          #~ ${{ env.TDB_SOURCE_ARCHIVE_PATH }}
 
     #~ - name: 'upload-release-source-asset'
       #~ #uses: actions/upload-files-to-a-github-release
