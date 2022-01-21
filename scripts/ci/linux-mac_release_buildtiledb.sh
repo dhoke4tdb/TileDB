@@ -84,7 +84,7 @@ pwd
 # move up a directory level so we are writing archive where tar won't fail reporting change while reading...
 cd $GITHUB_WORKSPACE/..
 pwd
-source_archive_name=tiledb-lnx-source-${TDB_REF_NAME}-${TDB_COMMIT_HASH}.tar.gz
+source_archive_name=tiledb-source-${TDB_REF_NAME}-${TDB_COMMIT_HASH}.tar.gz
 tar --exclude=build -zcf ${source_archive_name} ./TileDB
 ls -l $GITHUB_WORKSPACE/..
 sync
