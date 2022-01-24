@@ -12,7 +12,6 @@ on:
   pull_request:
     branches:
       - '*'  # must quote since "*" is a YAML reserved character; we want a string
-
   workflow_dispatch:
     inputs:
       overwrite_if_needed:
