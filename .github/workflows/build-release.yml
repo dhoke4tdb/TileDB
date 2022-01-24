@@ -1,7 +1,6 @@
 name: generate-releases
 
 on:
-  #This version of workflow_dispatch is from prepare_release.yml, will it show up in github app in build-release.yml now?
   workflow_dispatch:
     inputs:
       version:
