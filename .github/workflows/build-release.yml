@@ -1,6 +1,16 @@
 name: generate-releases
 
 on:
+  workflow_dispatch:
+    inputs:
+      overwrite_if_needed:
+        description: 'true/false, overwrite any previously same-named entity'
+        required: false
+        default: false
+      is_prerelease:
+        description: 'true/false, specify if asset is pre-release status'
+        required: false
+        default: true
   push:
     branches:
       - dev
@@ -12,16 +22,6 @@ on:
   pull_request:
     branches:
       - '*'  # must quote since "*" is a YAML reserved character; we want a string
-  workflow_dispatch:
-    inputs:
-      overwrite_if_needed:
-        description: 'true/false, overwrite any previously same-named entity'
-        required: false
-        default: false
-      is_prerelease:
-        description: 'true/false, specify if asset is pre-release status'
-        required: false
-        default: true
 
 env:
   SUDO: 'sudo'
