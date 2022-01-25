@@ -20,17 +20,17 @@ on:
         description: 'true/false, specify if asset is pre-release status'
         required: true #false
         default: true
-  #~ push:
-    #~ branches:
-      #~ - dev
-      #~ - release-*
-      #~ - build-*
-      #~ - refs/tags/*
+  push:
+    branches:
+      - dev
+      - release-*
+      - build-*
+      - refs/tags/*
       #~ - refs/heads/*
-      #~ #- dlh/ch10040-azr-osx-lnxto-ga
-  #~ pull_request:
-    #~ branches:
-      #~ - '*'  # must quote since "*" is a YAML reserved character; we want a string
+      #- dlh/ch10040-azr-osx-lnxto-ga
+  pull_request:
+    branches:
+      - '*'  # must quote since "*" is a YAML reserved character; we want a string
 
 env:
   SUDO: 'sudo'
