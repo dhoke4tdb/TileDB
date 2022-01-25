@@ -63,7 +63,7 @@ jobs:
             v_TILEDB_SERIALIZATION: ON
             v_CXX: clang++
             v_ARTIFACT_OS: macOS
-            v_ARTIFACT_ARCH: 'intel64'
+            v_ARTIFACT_ARCH: 'x86_64'
           - environ: arm64
             v_CXX: clang++
             v_ARTIFACT_OS: 'macos'
