@@ -326,24 +326,24 @@ jobs:
           ls -l $GITHUB_WORKSPACE/..
 
 
-      - name: 'upload-release-source-asset'
-        #uses: actions/upload-files-to-a-github-release
-        uses: svenstaro/upload-release-action@2.2.1
-        if: ${{ startsWith( github.ref, 'refs/tags') }}
-        #if: true #false
-        with:
-          # required items
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: ${{ env.TDB_SOURCE_ARCHIVE_PATH }}
-          tag: ${{ github.ref }}
-          # optional items
-          #asset_name:
-          #file_glob:
-          overwrite: ${{ github.event.inputs.overwrite_if_needed }}
-          prerelease: ${{ github.event.inputs.is_prerelease }}
-          #release_name: # defaults to tag name
-          #body:
-          #repo_name:
+      #~ - name: 'upload-release-source-asset'
+        #~ #uses: actions/upload-files-to-a-github-release
+        #~ uses: svenstaro/upload-release-action@2.2.1
+        #~ if: ${{ startsWith( github.ref, 'refs/tags') }}
+        #~ #if: true #false
+        #~ with:
+          #~ # required items
+          #~ repo_token: ${{ secrets.GITHUB_TOKEN }}
+          #~ file: ${{ env.TDB_SOURCE_ARCHIVE_PATH }}
+          #~ tag: ${{ github.ref }}
+          #~ # optional items
+          #~ #asset_name:
+          #~ #file_glob:
+          #~ overwrite: ${{ github.event.inputs.overwrite_if_needed }}
+          #~ prerelease: ${{ github.event.inputs.is_prerelease }}
+          #~ #release_name: # defaults to tag name
+          #~ #body:
+          #~ #repo_name:
           
       - name: 'upload-release-binary-asset'
         #uses: actions/upload-files-to-a-github-release
