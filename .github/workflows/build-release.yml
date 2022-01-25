@@ -317,6 +317,12 @@ jobs:
           pwd
           echo "TDB_SOURCE_ARCHIVE_PATH is ${{ env.TDB_SOURCE_ARCHIVE_PATH }}"
           echo "B - TDB_SOURCE_ARCHIVE_PATH is ${TDB_SOURCE_ARCHIVE_PATH}"
+          echo "TDB_BINARY_ARCHIVE_PATH is ${{ env.TDB_BINARY_ARCHIVE_PATH }}"
+          echo "B - TDB_BINARY_ARCHIVE_PATH is ${TDB_BINARY_ARCHIVE_PATH}"
+          echo "TDB_SOURCE_ARCHIVE_NAME is ${{ env.TDB_SOURCE_ARCHIVE_NAME }}"
+          echo "B - TDB_SOURCE_ARCHIVE_NAME is ${TDB_SOURCE_ARCHIVE_NAME}"
+          echo "TDB_BINARY_ARCHIVE_NAME is ${{ env.TDB_BINARY_ARCHIVE_NAME }}"
+          echo "B - TDB_BINARY_ARCHIVE_NAME is ${TDB_BINARY_ARCHIVE_NAME}"
           ls -l $GITHUB_WORKSPACE/..
 
 
