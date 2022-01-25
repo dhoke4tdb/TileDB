@@ -21,6 +21,8 @@ on:
         required: true #false
         default: true
   push:
+    tags:
+      - '*'
     branches:
       - dev
       - release-*
