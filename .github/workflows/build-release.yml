@@ -1,24 +1,25 @@
 name: generate-releases
 
 on:
-  workflow_dispatch:
-    inputs:
-      version:
-        description: 'New version to be released'
-        required: true
-      branch:
-        description: 'Release branch'
-        required: true
+  #~ # The following workflow_dispatch is as in prepare-release.yml, trying to see in gha...
   #~ workflow_dispatch:
     #~ inputs:
-      #~ overwrite_if_needed:
-        #~ description: 'true/false, overwrite any previously same-named entity'
-        #~ required: false
-        #~ default: false
-      #~ is_prerelease:
-        #~ description: 'true/false, specify if asset is pre-release status'
-        #~ required: true #false
-        #~ default: true
+      #~ version:
+        #~ description: 'New version to be released'
+        #~ required: true
+      #~ branch:
+        #~ description: 'Release branch'
+        #~ required: true
+  workflow_dispatch:
+    inputs:
+      overwrite_if_needed:
+        description: 'true/false, overwrite any previously same-named entity'
+        required: false
+        default: false
+      is_prerelease:
+        description: 'true/false, specify if asset is pre-release status'
+        required: true #false
+        default: true
   #~ push:
     #~ branches:
       #~ - dev
